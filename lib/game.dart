@@ -29,7 +29,7 @@ class _GamePageState extends State<GamePage> {
     if (timer != null && timer.isActive) {
       timer.cancel();
     }
-    timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
+    timer = Timer.periodic(Duration(milliseconds: 200 ~/ speed), (timer) {
       setState(() {});
     });
   }
@@ -40,7 +40,18 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
+  Direction getRandomDirection() {
+    int val = Random().nextInt(4);
+    direction = Direction.values[val];
+    return direction;
+  }
+
   void restart() {
+    length = 5;
+    score = 0;
+    speed = 1;
+    positions = [];
+    direction = getRandomDirection();
     changeSpeed();
   }
 
@@ -68,7 +79,7 @@ class _GamePageState extends State<GamePage> {
     return position;
   }
 
-  void draw() {
+  void draw() async {
     if (positions.length == 0) {
       positions.add(getRandomPosition());
     }
@@ -78,12 +89,66 @@ class _GamePageState extends State<GamePage> {
     for (var i = positions.length - 1; i > 0; i--) {
       positions[i] = positions[i - 1];
     }
-    positions[0] = getNextPosition(positions[0]);
+    positions[0] = await getNextPosition(positions[0]);
+  }
+
+  bool detectCollision(Offset position) {
+    if (position.dx >= upperBoundX && direction == Direction.right) {
+      return true;
+    } else if (position.dx <= lowerBoundX && direction == Direction.left) {
+      return true;
+    } else if (position.dy >= upperBoundY && direction == Direction.down) {
+      return true;
+    } else if (position.dy <= upperBoundY && direction == Direction.up) {
+      return true;
+    }
+    return false;
+  }
+
+  void showGameOverDialog() {
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            backgroundColor: Colors.red,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                color: Colors.blue,
+                width: 3.0,
+              ),
+              borderRadius: BorderRadius.all(
+                Radius.circular(10),
+              ),
+            ),
+            title: Text(
+              "Gameover",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              "Your game is over Score:" + score.toString(),
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    "Restart",
+                    style: TextStyle(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
+                  )),
+            ],
+          );
+        });
   }
 
   late Offset nextPosition;
 
-  Offset getNextPosition(Offset position) {
+  Future<Offset> getNextPosition(Offset position) async {
     if (direction == Direction.right) {
       nextPosition = Offset(position.dx + step, position.dy);
     } else if (direction == Direction.left) {
@@ -92,6 +157,15 @@ class _GamePageState extends State<GamePage> {
       nextPosition = Offset(position.dx, position.dy - step);
     } else if (direction == Direction.down) {
       nextPosition = Offset(position.dx, position.dy + step);
+    }
+
+    if (detectCollision(position) == true) {
+      if (timer != null && timer.isActive) {
+        timer.cancel();
+      }
+      await Future.delayed(
+          Duration(milliseconds: 200), () => showGameOverDialog());
+      return position;
     }
     return nextPosition;
   }
