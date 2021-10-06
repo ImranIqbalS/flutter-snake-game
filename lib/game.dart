@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:snake_game/control_panel.dart';
 import 'package:snake_game/direction.dart';
 import 'package:snake_game/piece.dart';
 
@@ -20,12 +21,22 @@ class _GamePageState extends State<GamePage> {
   List<Offset> positions = [];
   Direction direction = Direction.right;
   late Timer timer;
+  late Offset foodPosition;
+  late Piece food;
+  int score = 0;
+  double speed = 1.0;
   void changeSpeed() {
     if (timer != null && timer.isActive) {
       timer.cancel();
     }
     timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
       setState(() {});
+    });
+  }
+
+  Widget getControls() {
+    return ControlPanel(onTapped: (Direction newDirection) {
+      direction = newDirection;
     });
   }
 
@@ -70,8 +81,9 @@ class _GamePageState extends State<GamePage> {
     positions[0] = getNextPosition(positions[0]);
   }
 
+  late Offset nextPosition;
+
   Offset getNextPosition(Offset position) {
-    Offset nextPosition;
     if (direction == Direction.right) {
       nextPosition = Offset(position.dx + step, position.dy);
     } else if (direction == Direction.left) {
@@ -81,11 +93,30 @@ class _GamePageState extends State<GamePage> {
     } else if (direction == Direction.down) {
       nextPosition = Offset(position.dx, position.dy + step);
     }
+    return nextPosition;
+  }
+
+  void drawFood() {
+    if (foodPosition == null) {
+      foodPosition = getRandomPosition();
+    }
+    if (foodPosition == positions[0]) {
+      length++;
+      score = score + 5;
+      speed = speed + 0.25;
+      foodPosition = getRandomPosition();
+    }
+    food = Piece(
+        color: Colors.red,
+        size: step,
+        posX: foodPosition.dx.toInt(),
+        posY: foodPosition.dy.toInt());
   }
 
   List<Piece> getPieces() {
     final pieces = <Piece>[];
     draw();
+    drawFood();
     for (var i = 0; i < length; ++i) {
       pieces.add(Piece(
         color: Colors.red,
@@ -115,6 +146,8 @@ class _GamePageState extends State<GamePage> {
               Stack(
                 children: getPieces(),
               ),
+              getControls(),
+              food,
             ],
           )),
     );
