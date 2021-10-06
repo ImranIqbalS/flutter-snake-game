@@ -107,10 +107,12 @@ class _GamePageState extends State<GamePage> {
       foodPosition = getRandomPosition();
     }
     food = Piece(
-        color: Colors.red,
-        size: step,
-        posX: foodPosition.dx.toInt(),
-        posY: foodPosition.dy.toInt());
+      color: Colors.red,
+      size: step,
+      posX: foodPosition.dx.toInt(),
+      posY: foodPosition.dy.toInt(),
+      isAnimated: true,
+    );
   }
 
   List<Piece> getPieces() {
@@ -118,14 +120,29 @@ class _GamePageState extends State<GamePage> {
     draw();
     drawFood();
     for (var i = 0; i < length; ++i) {
+      if (i >= positions.length) {
+        continue;
+      }
       pieces.add(Piece(
-        color: Colors.red,
+        color: i.isEven ? Colors.red : Colors.green,
         size: step,
         posX: positions[0].dx.toInt(),
         posY: positions[0].dy.toInt(),
+        isAnimated: false,
       ));
     }
     return pieces;
+  }
+
+  Widget getScore() {
+    return Positioned(
+      top: 80.0,
+      right: 50.0,
+      child: Text(
+        "Score:" + score.toString(),
+        style: TextStyle(fontSize: 30, color: Colors.white),
+      ),
+    );
   }
 
   @override
@@ -148,6 +165,7 @@ class _GamePageState extends State<GamePage> {
               ),
               getControls(),
               food,
+              getScore(),
             ],
           )),
     );
